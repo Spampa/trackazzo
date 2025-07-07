@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// Modello per utenti Telegram
+model TelegramUser {
+  id        Int      @id @default(autoincrement())
+  chatId    String   @unique // ID della chat Telegram
+  username  String?  // Username Telegram (opzionale)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relazione con i prodotti tracciati
+  trackedProducts UserProductTracking[]
+
+  @@map("telegram_users")
+}
+
+// Modello per prodotti Amazon
+model AmazonProduct {
+  id            Int      @id @default(autoincrement())
+  link          String   @unique // Link del prodotto Amazon
+  title         String?  // Titolo del prodotto
+  currentPrice  Float?   // Prezzo attuale
+  originalPrice Float?   // Prezzo originale/di listino
+  currency      String   @default("EUR") // Valuta del prezzo
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relazioni
+  priceHistory   PriceHistory[] // Storico prezzi
+  trackedByUsers UserProductTracking[] // Utenti che lo tracciano
+
+  @@map("amazon_products")
+}
+
+// Modello per il tracking dei prezzi nel tempo
+model PriceHistory {
+  id        Int      @id @default(autoincrement())
+  productId Int // Riferimento al prodotto
+  price     Float // Prezzo registrato
+  currency  String   @default("EUR")
+  timestamp DateTime @default(now())
+
+  // Relazione con il prodotto
+  product AmazonProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("price_history")
+}
+
+// Modello per l'assegnazione prodotti-utenti (tracking)
+model UserProductTracking {
+  id          Int      @id @default(autoincrement())
+  userId      Int      // Riferimento all'utente Telegram
+  productId   Int      // Riferimento al prodotto Amazon
+  targetPrice Float?   // Prezzo target per notifica (opzionale)
+  isActive    Boolean  @default(true) // Se il tracking è attivo
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relazioni
+  user    TelegramUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product AmazonProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  // Un utente può tracciare lo stesso prodotto solo una volta
+  @@unique([userId, productId])
+  @@map("user_product_tracking")
+}
