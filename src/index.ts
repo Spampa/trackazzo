@@ -22,6 +22,15 @@ const priceMonitoringJob = PriceMonitoringJob.getInstance();
 
 app.use(express.json());
 
+// Health check endpoint for Docker
+app.get('/health', (req: Request, res: Response) => {
+    res.status(200).json({ 
+        status: 'healthy', 
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
+    });
+});
+
 app.post("/webhook", async (req: Request, res: Response) => {
     const update: TelegramUpdate = req.body;
     

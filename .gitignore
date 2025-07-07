@@ -132,3 +132,7 @@ test-*.js
 tmp/
 temp/
 *.tmp
+
+# Docker data
+data/
+logs/
